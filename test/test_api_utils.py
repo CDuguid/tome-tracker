@@ -88,6 +88,38 @@ def mocked_requests_get(*args, **kwargs):
         }
         return MockResponse(json_data, 200)
 
+    elif args[0] == 'https://www.googleapis.com/books/v1/volumes/pMyoPwAACAAJ':
+        json_data = {
+            "id": "pMyoPwAACAAJ",
+            "etag": "WmUhbbR1UHg",
+            "selfLink": "https://www.googleapis.com/books/v1/volumes/pMyoPwAACAAJ",
+            "volumeInfo": {
+                "title": "Meditations",
+                "authors": [
+                    "Marcus Aurelius"
+                ],
+                "publisher": "Phoenix",
+                "publishedDate": "2004",
+                "description": "A new translation of one of the most important texts of Western philosophy.",
+                "industryIdentifiers": [
+                    {
+                        "type": "ISBN_10",
+                        "identifier": "0753820161"
+                    },
+                    {
+                        "type": "ISBN_13",
+                        "identifier": "9780753820162"
+                    }
+                ],
+                "pageCount": 200,
+                "imageLinks": {
+                    "thumbnail": "http://books.google.com/books/content?id=pMyoPwAACAAJ&printsec=frontcover&img=1&zoom=1&imgtk=AFLRE70wIuIPNQ8IJVGr-Er8MuUwDiPJE4xvb1UtvG3CZPDojWA3H05h1OnRPYbFjglMyKYHMc3_wEZ0EDgstcqmXUI9EjstHgvcCrcGLCjCVpcRpuNsDyuMRAbsQSQ5PopjBnrvLVW7&source=gbs_api"
+                },
+                "language": "en",
+            },
+        }
+        return MockResponse(json_data, 200)
+
     return MockResponse(None, 404)
 
 
@@ -152,4 +184,26 @@ class TestGetBookByVolumeId:
     def test_raises_http_error_on_a_bad_request(self, mock_request):
         with pytest.raises(HTTPError):
             get_book_by_volume_id("network_failure")
+    
+    @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
+    def test_handles_missing_book_info_with_none_values(self, mock_request):
+        expected = {
+            "id": "pMyoPwAACAAJ",
+            "etag": "WmUhbbR1UHg",
+            "selfLink": "https://www.googleapis.com/books/v1/volumes/pMyoPwAACAAJ",
+            "title": "Meditations",
+            "authors": [
+                "Marcus Aurelius"
+            ],
+            "publisher": "Phoenix",
+            "publishedDate": "2004",
+            "description": "A new translation of one of the most important texts of Western philosophy.",
+            "pageCount": 200,
+            "categories": None,
+            "language": "en",
+            "isbn_10": "0753820161",
+            "isbn_13": "9780753820162",
+            "thumbnail": "http://books.google.com/books/content?id=pMyoPwAACAAJ&printsec=frontcover&img=1&zoom=1&imgtk=AFLRE70wIuIPNQ8IJVGr-Er8MuUwDiPJE4xvb1UtvG3CZPDojWA3H05h1OnRPYbFjglMyKYHMc3_wEZ0EDgstcqmXUI9EjstHgvcCrcGLCjCVpcRpuNsDyuMRAbsQSQ5PopjBnrvLVW7&source=gbs_api"
+        }
+        assert get_book_by_volume_id("pMyoPwAACAAJ") == expected
     

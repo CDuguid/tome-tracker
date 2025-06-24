@@ -1,6 +1,5 @@
 import requests
 from requests.exceptions import HTTPError
-from collections import defaultdict
 
 
 class NoMatchingISBN(Exception):
@@ -39,7 +38,7 @@ def get_book_by_volume_id(volume_id:str) -> dict:
 
         # Need to handle keys in separate blocks due to different locations in the JSON
         # KeyErrors will occur if the response body is missing info
-        book_info = defaultdict(str)
+        book_info = {}
         keys = ["id", "etag", "selfLink"]
         volume_info_keys = ["title", "authors", "publisher", "publishedDate", "description", "pageCount", "categories", "language"]
         
@@ -47,15 +46,18 @@ def get_book_by_volume_id(volume_id:str) -> dict:
             try:
                 book_info[key] = response_body[key]
             except KeyError:
-                pass
+                book_info[key] = None
         
         for key in volume_info_keys:
             try:
                 book_info[key] = response_body["volumeInfo"][key]
             except KeyError:
-                pass
+                book_info[key] = None
 
         try:
+            book_info["isbn_10"] = None
+            book_info["isbn_13"] = None
+            
             for identifier in response_body["volumeInfo"]["industryIdentifiers"]:
                 if identifier["type"] == "ISBN_10":
                     book_info["isbn_10"] = identifier["identifier"]
@@ -68,7 +70,7 @@ def get_book_by_volume_id(volume_id:str) -> dict:
         try:
             book_info["thumbnail"] = response_body["volumeInfo"]["imageLinks"]["thumbnail"]
         except KeyError:
-            pass
+            book_info["thumbnail"] = None
         
         return book_info
     
