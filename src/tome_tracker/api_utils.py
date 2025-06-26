@@ -1,5 +1,6 @@
 import requests
 from requests.exceptions import HTTPError
+import re
 
 
 class NoMatchingISBN(Exception):
@@ -81,6 +82,39 @@ def get_book_by_volume_id(volume_id: str) -> dict:
         except KeyError:
             book_info["thumbnail"] = None
 
-        return book_info
+        cleaned_book_info = clean_book_info(book_info)
+
+        return cleaned_book_info
 
     raise HTTPError(f"Non-success status code: {response.status_code}")
+
+
+def clean_book_info(book_info: dict) -> dict:
+    """
+    Cleans the book info dictionary:
+     - Standardises all dates as YYYY-MM-DD, defaulting to earliest match for passed dates.
+    Returns the modified book info dictionary with the same key structure.
+    """
+    if book_info["publishedDate"] is None:
+        return book_info
+
+    while True:
+        date = book_info["publishedDate"]
+        if re.match(r"^\d{4}$", date):
+            updated_date = "".join([date, "-01-01"])
+            book_info["publishedDate"] = updated_date
+            break
+        elif re.match(r"^\d{4}-\d{2}$", date):
+            updated_date = "".join([date, "-01"])
+            book_info["publishedDate"] = updated_date
+            break
+        elif re.match(r"^\d{4}-\d-*\d*\d*$", date):
+            updated_date = "".join([date[:4], "-0", date[5:]])
+            book_info["publishedDate"] = updated_date
+        elif re.match(r"^\d{4}-\d{2}-\d$", date):
+            updated_date = "".join([date[:7], "-0", date[-1]])
+            book_info["publishedDate"] = updated_date
+        elif re.match(r"^\d{4}-\d{2}-\d{2}$", date):
+            break
+
+    return book_info

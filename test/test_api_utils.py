@@ -1,4 +1,5 @@
 from src.tome_tracker.api_utils import (
+    clean_book_info,
     get_volume_id_by_isbn,
     get_book_by_volume_id,
     NoMatchingISBN,
@@ -149,7 +150,7 @@ class TestGetBookByVolumeId:
             "title": "The Forever War",
             "authors": ["Joe Haldeman"],
             "publisher": "Gollancz",
-            "publishedDate": "2010",
+            "publishedDate": "2010-01-01",
             "description": "Private William Mandella is a hero in spite of himself--a reluctant conscript drafted into an elite military unit. He never wanted to go to war, but the leaders on Earth have drawn a line in the interstellar sand--despite the fact that their fierce alien enemy is unknowable, unconquerable, and very far away.",
             "pageCount": 240,
             "categories": [
@@ -182,7 +183,7 @@ class TestGetBookByVolumeId:
             "title": "Meditations",
             "authors": ["Marcus Aurelius"],
             "publisher": "Phoenix",
-            "publishedDate": "2004",
+            "publishedDate": "2004-01-01",
             "description": "A new translation of one of the most important texts of Western philosophy.",
             "pageCount": 200,
             "categories": None,
@@ -192,3 +193,88 @@ class TestGetBookByVolumeId:
             "thumbnail": "http://books.google.com/books/content?id=pMyoPwAACAAJ&printsec=frontcover&img=1&zoom=1&imgtk=AFLRE70wIuIPNQ8IJVGr-Er8MuUwDiPJE4xvb1UtvG3CZPDojWA3H05h1OnRPYbFjglMyKYHMc3_wEZ0EDgstcqmXUI9EjstHgvcCrcGLCjCVpcRpuNsDyuMRAbsQSQ5PopjBnrvLVW7&source=gbs_api",
         }
         assert get_book_by_volume_id("pMyoPwAACAAJ") == expected
+
+
+class TestCleanBookInfo:
+    def test_returns_dict_unchanged_given_full_date_info(self):
+        book_info = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1789-07-14",
+            "thumbnail": None,
+        }
+        actual = clean_book_info(book_info)
+        assert actual == book_info
+
+    def test_adds_missing_day_value_to_published_date(self):
+        book_info = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1815-06",
+            "thumbnail": None,
+        }
+        expected = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1815-06-01",
+            "thumbnail": None,
+        }
+        actual = clean_book_info(book_info)
+        assert actual == expected
+
+    def test_adds_missing_month_and_day_value_to_published_date(self):
+        book_info = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1862",
+            "thumbnail": None,
+        }
+        expected = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1862-01-01",
+            "thumbnail": None,
+        }
+        actual = clean_book_info(book_info)
+        assert actual == expected
+
+    def test_handles_single_digit_month_and_day_values(self):
+        single_month_book = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1815-7-08",
+            "thumbnail": None,
+        }
+        single_day_book = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1815-07-8",
+            "thumbnail": None,
+        }
+        single_month_and_day_book = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1815-7-8",
+            "thumbnail": None,
+        }
+        expected = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": "1815-07-08",
+            "thumbnail": None,
+        }
+        assert (
+            clean_book_info(single_month_book)
+            == clean_book_info(single_day_book)
+            == clean_book_info(single_month_and_day_book)
+            == expected
+        )
+
+    def test_handles_date_value_being_none(self):
+        book_info = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": None,
+            "thumbnail": None,
+        }
+        assert clean_book_info(book_info) == book_info
