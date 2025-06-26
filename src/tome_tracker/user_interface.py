@@ -1,12 +1,10 @@
-
-
 class UserInterface:
     def __init__(self):
         pass
-    
+
     def main_loop(self):
         self.print_intro_message()
-        
+
         while True:
             command = input("\n> ").casefold()
             if command == "a":
@@ -21,7 +19,7 @@ class UserInterface:
                 break
             else:
                 print("Command not recognised. Choose one of a/l/d/u/q.")
-    
+
     def print_intro_message(self):
         print("\nWelcome to Tome Tracker!")
         print("\nChoose from one of the following options:")
@@ -30,9 +28,10 @@ class UserInterface:
         print(" - [d]elete a stored book")
         print(" - [u]pdate a stored book")
         print(" - [q]uit")
-    
+
     def add_book(self):
-        isbn = input("Please provide the book's ISBN:\n> ")
+        # isbn = input("Please provide the book's ISBN:\n> ")
+        pass
 
 
 if __name__ == "__main__":

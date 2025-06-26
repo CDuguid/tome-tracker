@@ -4,6 +4,7 @@ import datetime
 
 load_dotenv()
 
+
 def create_books_table(db_name: str):
     with psycopg.connect(f"dbname={db_name}") as conn:
         conn.execute("""
@@ -27,14 +28,16 @@ def create_books_table(db_name: str):
             );
         """)
 
+
 def add_book_to_db(db_name: str, book_info: dict, read: bool):
     added = datetime.date.today()
-    
+
     if check_if_book_in_db(db_name, book_info["id"]):
         return
-    
+
     with psycopg.connect(f"dbname={db_name}") as conn:
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO books
             VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
@@ -56,23 +59,27 @@ def add_book_to_db(db_name: str, book_info: dict, read: bool):
                 book_info["isbn_13"],
                 book_info["thumbnail"],
                 read,
-                added
-            )
+                added,
+            ),
         )
+
 
 def check_if_book_in_db(db_name: str, volume_id: str) -> bool:
     with psycopg.connect(f"dbname={db_name}") as conn:
-        response = conn.execute("""
+        response = conn.execute(
+            """
             SELECT * FROM books
             WHERE id = %s
             """,
-            (volume_id,)
+            (volume_id,),
         ).fetchall()
     return len(response) > 0
 
+
 def list_books_in_db(db_name: str, read_status: bool | None = None) -> list[str]:
     with psycopg.connect(f"dbname={db_name}") as conn:
-        response = conn.execute("""
+        response = conn.execute(
+            """
             SELECT
                 title
             FROM
@@ -82,35 +89,42 @@ def list_books_in_db(db_name: str, read_status: bool | None = None) -> list[str]
             ORDER BY
                 title ASC;
             """,
-            (read_status,)
+            (read_status,),
         ).fetchall()
     return [title[0] for title in response]
 
-def delete_book_from_db(db_name: str, title: str | None = None, isbn: str | None = None):
+
+def delete_book_from_db(
+    db_name: str, title: str | None = None, isbn: str | None = None
+):
     with psycopg.connect(f"dbname={db_name}") as conn:
         if title:
-            conn.execute("""
+            conn.execute(
+                """
                 DELETE FROM
                     books
                 WHERE
                     title = %s;
                 """,
-                (title,)
+                (title,),
             )
         if isbn:
-            conn.execute("""
+            conn.execute(
+                """
                 DELETE FROM
                     books
                 WHERE
                     isbn_10 = %s OR isbn_13 = %s;
                 """,
-                (isbn, isbn)
+                (isbn, isbn),
             )
+
 
 def update_book_in_db(db_name: str, title: str, toggle_read: bool):
     if toggle_read:
         with psycopg.connect(f"dbname={db_name}") as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE
                     books
                 SET
@@ -118,6 +132,5 @@ def update_book_in_db(db_name: str, title: str, toggle_read: bool):
                 WHERE
                     title = %s;
                 """,
-                (title,)
+                (title,),
             )
-    
