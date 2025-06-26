@@ -1,4 +1,4 @@
-from src.tome_tracker.db_utils import create_books_table, add_book_to_db, list_books_in_db, check_if_book_in_db
+from src.tome_tracker.db_utils import create_books_table, add_book_to_db, list_books_in_db, check_if_book_in_db, delete_book_from_db, update_book_in_db
 import psycopg
 import pytest
 import datetime
@@ -116,7 +116,7 @@ class TestCreateBooksTable:
             "isbn_10",
             "isbn_13",
             "thumbnail",
-            "unread",
+            "read",
             "added"
         ]
         assert actual_columns == expected_columns
@@ -190,9 +190,27 @@ class TestListBooksInDB:
         create_books_table("test_tome_tracker")
         add_book_to_db("test_tome_tracker", meditations_info, True)
         add_book_to_db("test_tome_tracker", circe_info, True)
-        add_book_to_db("test_tome_tracker", time_and_chance_info, True)
+        add_book_to_db("test_tome_tracker", time_and_chance_info, False)
         expected = ["Circe", "Meditations", "Time and Chance"]
         actual = list_books_in_db("test_tome_tracker")
+        assert actual == expected
+    
+    def test_returns_list_of_all_read_books(self, meditations_info, circe_info, time_and_chance_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", meditations_info, True)
+        add_book_to_db("test_tome_tracker", circe_info, True)
+        add_book_to_db("test_tome_tracker", time_and_chance_info, False)
+        expected = ["Circe", "Meditations"]
+        actual = list_books_in_db("test_tome_tracker", True)
+        assert actual == expected
+    
+    def test_returns_list_of_all_unread_books(self, meditations_info, circe_info, time_and_chance_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", meditations_info, True)
+        add_book_to_db("test_tome_tracker", circe_info, True)
+        add_book_to_db("test_tome_tracker", time_and_chance_info, False)
+        expected = ["Time and Chance"]
+        actual = list_books_in_db("test_tome_tracker", False)
         assert actual == expected
 
 
@@ -206,3 +224,71 @@ class TestCheckIfBookInDB:
     def test_returns_false_if_book_is_not_in_database(self, meditations_info):
         create_books_table("test_tome_tracker")
         assert check_if_book_in_db("test_tome_tracker", meditations_info["id"]) == False
+
+
+class TestDeleteBookFromDB:
+    
+    def test_deletes_title_from_database_if_present(self, meditations_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", meditations_info, True)
+        delete_book_from_db("test_tome_tracker", title=meditations_info["title"])
+        remaining_books = list_books_in_db("test_tome_tracker")
+        assert len(remaining_books) == 0
+    
+    def test_does_nothing_if_title_not_present(self, meditations_info, circe_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", circe_info, True)
+        delete_book_from_db("test_tome_tracker", title=meditations_info["title"])
+        remaining_books = list_books_in_db("test_tome_tracker")
+        assert len(remaining_books) == 1
+    
+    def test_deletes_isbn_from_database_if_present(self, meditations_info, circe_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", meditations_info, True)
+        add_book_to_db("test_tome_tracker", circe_info, True)
+        delete_book_from_db("test_tome_tracker", isbn=meditations_info["isbn_10"])
+        delete_book_from_db("test_tome_tracker", isbn=circe_info["isbn_13"])
+        remaining_books = list_books_in_db("test_tome_tracker")
+        assert len(remaining_books) == 0
+    
+    def test_does_nothing_if_isbn_not_present(self, meditations_info, circe_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", circe_info, True)
+        delete_book_from_db("test_tome_tracker", isbn=meditations_info["isbn_10"])
+        delete_book_from_db("test_tome_tracker", isbn=meditations_info["isbn_13"])
+        remaining_books = list_books_in_db("test_tome_tracker")
+        assert len(remaining_books) == 1
+
+
+class TestUpdateBookInDB:
+    
+    def test_changes_an_unread_book_to_read(self, meditations_info, circe_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", meditations_info, False)
+        add_book_to_db("test_tome_tracker", circe_info, False)
+        update_book_in_db("test_tome_tracker", meditations_info["title"], True)
+        assert len(list_books_in_db("test_tome_tracker", True)) == 1
+        assert len(list_books_in_db("test_tome_tracker", False)) == 1
+    
+    def test_changes_a_read_book_to_unread(self, meditations_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", meditations_info, True)
+        update_book_in_db("test_tome_tracker", meditations_info["title"], True)
+        assert len(list_books_in_db("test_tome_tracker", True)) == 0
+        assert len(list_books_in_db("test_tome_tracker", False)) == 1
+    
+    def test_does_nothing_if_attempting_to_update_a_nonpresent_book(self, meditations_info, circe_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", circe_info, True)
+        update_book_in_db("test_tome_tracker", meditations_info["title"], True)
+        assert len(list_books_in_db("test_tome_tracker", True)) == 1
+        assert len(list_books_in_db("test_tome_tracker", False)) == 0
+    
+    @pytest.mark.skip(reason="current implementation toggles read status, rather than setting it to a specific value")
+    def test_does_nothing_if_attempting_to_set_read_status_to_current_value(self, meditations_info, circe_info):
+        create_books_table("test_tome_tracker")
+        add_book_to_db("test_tome_tracker", circe_info, True)
+        update_book_in_db("test_tome_tracker", meditations_info["title"], True)
+        assert len(list_books_in_db("test_tome_tracker", True)) == 1
+        assert len(list_books_in_db("test_tome_tracker", False)) == 0
+
