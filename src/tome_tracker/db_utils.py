@@ -30,6 +30,9 @@ def create_books_table(db_name: str):
 def add_book_to_db(db_name: str, book_info: dict, unread: bool):
     added = datetime.date.today()
     
+    if check_if_book_in_db(db_name, book_info["id"]):
+        return
+    
     with psycopg.connect(f"dbname={db_name}") as conn:
         conn.execute("""
             INSERT INTO books
@@ -56,3 +59,26 @@ def add_book_to_db(db_name: str, book_info: dict, unread: bool):
                 added
             )
         )
+
+def check_if_book_in_db(db_name: str, volume_id: str) -> bool:
+    with psycopg.connect(f"dbname={db_name}") as conn:
+        response = conn.execute("""
+            SELECT * FROM books
+            WHERE id=%s
+            """,
+            (volume_id,)
+        ).fetchall()
+    return len(response) > 0
+
+
+def list_books_in_db(db_name: str) -> list[str]:
+    with psycopg.connect(f"dbname={db_name}") as conn:
+        response = conn.execute("""
+            SELECT
+                title
+            FROM
+                books
+            ORDER BY
+                title ASC;
+        """).fetchall()
+    return [title[0] for title in response]
