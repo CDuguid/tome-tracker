@@ -50,6 +50,10 @@ def get_book_by_volume_id(volume_id: str) -> dict:
             "categories",
             "language",
         ]
+        list_format_keys = [
+            "authors",
+            "categories",
+        ]
 
         for key in keys:
             try:
@@ -61,7 +65,10 @@ def get_book_by_volume_id(volume_id: str) -> dict:
             try:
                 book_info[key] = response_body["volumeInfo"][key]
             except KeyError:
-                book_info[key] = None
+                if key in list_format_keys:
+                    book_info[key] = []
+                else:
+                    book_info[key] = None
 
         try:
             book_info["isbn_10"] = None
@@ -93,14 +100,14 @@ def clean_book_info(book_info: dict) -> dict:
     """
     Cleans the book info dictionary:
      - Standardises all dates as YYYY-MM-DD, defaulting to earliest match for passed dates.
+     - Standardises capitalisation of author names.
     Returns the modified book info dictionary with the same key structure.
     """
-    if book_info["publishedDate"] is None:
-        return book_info
-
     while True:
         date = book_info["publishedDate"]
-        if re.match(r"^\d{4}$", date):
+        if date is None:
+            break
+        elif re.match(r"^\d{4}$", date):
             updated_date = "".join([date, "-01-01"])
             book_info["publishedDate"] = updated_date
             break
@@ -116,5 +123,10 @@ def clean_book_info(book_info: dict) -> dict:
             book_info["publishedDate"] = updated_date
         elif re.match(r"^\d{4}-\d{2}-\d{2}$", date):
             break
+
+    cleaned_authors = []
+    for author in book_info["authors"]:
+        cleaned_authors.append(author.title())
+    book_info["authors"] = cleaned_authors
 
     return book_info

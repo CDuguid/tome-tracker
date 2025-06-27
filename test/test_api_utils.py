@@ -96,8 +96,6 @@ def mocked_requests_get(*args, **kwargs):
             "selfLink": "https://www.googleapis.com/books/v1/volumes/pMyoPwAACAAJ",
             "volumeInfo": {
                 "title": "Meditations",
-                "authors": ["Marcus Aurelius"],
-                "publisher": "Phoenix",
                 "publishedDate": "2004",
                 "description": "A new translation of one of the most important texts of Western philosophy.",
                 "industryIdentifiers": [
@@ -175,18 +173,18 @@ class TestGetBookByVolumeId:
             get_book_by_volume_id("network_failure")
 
     @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
-    def test_handles_missing_book_info_with_none_values(self, mock_request):
+    def test_handles_missing_book_info(self, mock_request):
         expected = {
             "id": "pMyoPwAACAAJ",
             "etag": "WmUhbbR1UHg",
             "selfLink": "https://www.googleapis.com/books/v1/volumes/pMyoPwAACAAJ",
             "title": "Meditations",
-            "authors": ["Marcus Aurelius"],
-            "publisher": "Phoenix",
+            "authors": [],
+            "publisher": None,
             "publishedDate": "2004-01-01",
             "description": "A new translation of one of the most important texts of Western philosophy.",
             "pageCount": 200,
-            "categories": None,
+            "categories": [],
             "language": "en",
             "isbn_10": "0753820161",
             "isbn_13": "9780753820162",
@@ -202,6 +200,7 @@ class TestCleanBookInfo:
             "title": "Test Book",
             "publishedDate": "1789-07-14",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         actual = clean_book_info(book_info)
         assert actual == book_info
@@ -212,12 +211,14 @@ class TestCleanBookInfo:
             "title": "Test Book",
             "publishedDate": "1815-06",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         expected = {
             "id": "abc",
             "title": "Test Book",
             "publishedDate": "1815-06-01",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         actual = clean_book_info(book_info)
         assert actual == expected
@@ -228,12 +229,14 @@ class TestCleanBookInfo:
             "title": "Test Book",
             "publishedDate": "1862",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         expected = {
             "id": "abc",
             "title": "Test Book",
             "publishedDate": "1862-01-01",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         actual = clean_book_info(book_info)
         assert actual == expected
@@ -244,24 +247,28 @@ class TestCleanBookInfo:
             "title": "Test Book",
             "publishedDate": "1815-7-08",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         single_day_book = {
             "id": "abc",
             "title": "Test Book",
             "publishedDate": "1815-07-8",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         single_month_and_day_book = {
             "id": "abc",
             "title": "Test Book",
             "publishedDate": "1815-7-8",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         expected = {
             "id": "abc",
             "title": "Test Book",
             "publishedDate": "1815-07-08",
             "thumbnail": None,
+            "authors": ["Napoleon Bonaparte"],
         }
         assert (
             clean_book_info(single_month_book)
@@ -276,5 +283,25 @@ class TestCleanBookInfo:
             "title": "Test Book",
             "publishedDate": None,
             "thumbnail": None,
+            "authors": [],
         }
         assert clean_book_info(book_info) == book_info
+
+    def test_capitalises_author_names(self):
+        book_info = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": None,
+            "authors": [
+                "jane doe",
+                "David Z. ALBERT",
+            ],
+        }
+        expected = {
+            "id": "abc",
+            "title": "Test Book",
+            "publishedDate": None,
+            "authors": ["Jane Doe", "David Z. Albert"],
+        }
+        actual = clean_book_info(book_info)
+        assert actual == expected
