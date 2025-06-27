@@ -28,7 +28,7 @@ def get_volume_id_by_isbn(isbn: str) -> str:
 def get_book_by_volume_id(volume_id: str) -> dict:
     """
     Calls the Google Books API with the passed volume id.
-    Returns desired info about the book as a dictionary.
+    Returns desired info about the book as a dictionary, after cleaning it.
     Should only be called after a volume id is confirmed to ensure a match is present.
     """
     url = f"https://www.googleapis.com/books/v1/volumes/{volume_id}"
@@ -124,9 +124,6 @@ def clean_book_info(book_info: dict) -> dict:
         elif re.match(r"^\d{4}-\d{2}-\d{2}$", date):
             break
 
-    cleaned_authors = []
-    for author in book_info["authors"]:
-        cleaned_authors.append(author.title())
-    book_info["authors"] = cleaned_authors
+    book_info["authors"] = [a.title() for a in book_info["authors"]]
 
     return book_info

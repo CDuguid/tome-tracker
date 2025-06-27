@@ -114,32 +114,29 @@ def mocked_requests_get(*args, **kwargs):
     return MockResponse(None, 404)
 
 
+@patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
 class TestGetVolumeIdByISBN:
-    @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
     def test_returns_volume_id_given_correct_isbn_13(self, mock_request):
         forever_war_isbn = "9780575094147"
         forever_war_id = "qm2PPwAACAAJ"
         assert get_volume_id_by_isbn(forever_war_isbn) == forever_war_id
 
-    @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
     def test_returns_volume_id_given_correct_isbn_10(self, mock_request):
         forever_war_isbn = "0575094141"
         forever_war_id = "qm2PPwAACAAJ"
         assert get_volume_id_by_isbn(forever_war_isbn) == forever_war_id
 
-    @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
     def test_raises_http_error_on_a_bad_request(self, mock_request):
         with pytest.raises(HTTPError):
             get_volume_id_by_isbn("network_failure")
 
-    @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
     def test_raises_no_matching_isbn_error_given_incorrect_isbn(self, mock_request):
         with pytest.raises(NoMatchingISBN):
             get_volume_id_by_isbn("1234")
 
 
+@patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
 class TestGetBookByVolumeId:
-    @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
     def test_returns_correctly_formatted_dictionary_given_volume_id(self, mock_request):
         expected = {
             "id": "qm2PPwAACAAJ",
@@ -167,12 +164,10 @@ class TestGetBookByVolumeId:
         }
         assert get_book_by_volume_id("qm2PPwAACAAJ") == expected
 
-    @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
     def test_raises_http_error_on_a_bad_request(self, mock_request):
         with pytest.raises(HTTPError):
             get_book_by_volume_id("network_failure")
 
-    @patch("src.tome_tracker.api_utils.requests.get", side_effect=mocked_requests_get)
     def test_handles_missing_book_info(self, mock_request):
         expected = {
             "id": "pMyoPwAACAAJ",
@@ -202,8 +197,7 @@ class TestCleanBookInfo:
             "thumbnail": None,
             "authors": ["Napoleon Bonaparte"],
         }
-        actual = clean_book_info(book_info)
-        assert actual == book_info
+        assert clean_book_info(book_info) == book_info
 
     def test_adds_missing_day_value_to_published_date(self):
         book_info = {
@@ -220,8 +214,7 @@ class TestCleanBookInfo:
             "thumbnail": None,
             "authors": ["Napoleon Bonaparte"],
         }
-        actual = clean_book_info(book_info)
-        assert actual == expected
+        assert clean_book_info(book_info) == expected
 
     def test_adds_missing_month_and_day_value_to_published_date(self):
         book_info = {
@@ -238,8 +231,7 @@ class TestCleanBookInfo:
             "thumbnail": None,
             "authors": ["Napoleon Bonaparte"],
         }
-        actual = clean_book_info(book_info)
-        assert actual == expected
+        assert clean_book_info(book_info) == expected
 
     def test_handles_single_digit_month_and_day_values(self):
         single_month_book = {
@@ -303,5 +295,4 @@ class TestCleanBookInfo:
             "publishedDate": None,
             "authors": ["Jane Doe", "David Z. Albert"],
         }
-        actual = clean_book_info(book_info)
-        assert actual == expected
+        assert clean_book_info(book_info) == expected
