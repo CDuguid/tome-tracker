@@ -30,7 +30,7 @@ def create_books_table(db_name: str):
         """)
 
 
-def add_book_to_db(db_name: str, book_info: dict, read: bool):
+def add_book_to_db(db_name: str, book_info: dict, read: bool) -> bool:
     """
     Adds a single book to the `books` table of the passed database.
     If the book's `id` is already in the database, nothing happens.
@@ -39,11 +39,14 @@ def add_book_to_db(db_name: str, book_info: dict, read: bool):
      - `db_name`: the name of the database with the `books` table.
      - `book_info`: a dictionary containing info on a single book.
      - `read`: a boolean flag tracking whether the book has been read.
+
+    ### Returns:
+    `True` if the book has been added to the database, `False` if it is already there.
     """
     added = datetime.date.today()
 
-    if check_if_book_in_db(db_name, book_info["id"]):
-        return
+    if check_if_book_in_db(db_name, volume_id=book_info["id"]):
+        return False
 
     with psycopg.connect(f"dbname={db_name}") as conn:
         conn.execute(
@@ -72,27 +75,52 @@ def add_book_to_db(db_name: str, book_info: dict, read: bool):
                 added,
             ),
         )
+    return True
 
 
-def check_if_book_in_db(db_name: str, volume_id: str) -> bool:
+def check_if_book_in_db(
+    db_name: str,
+    volume_id: str | None = None,
+    title: str | None = None,
+    isbn: str | None = None,
+) -> bool:
     """
     Checks if a given book is stored in the database.
 
     ### Args:
      - `db_name`: the name of the database with the `books` table.
      - `volume_id`: the id of the book to check.
+     - `title`: the title of the book to check.
+     - `isbn`: the ISBN of the book to check.
 
     ### Returns:
     `True` if the book is in the database, `False` otherwise.
     """
     with psycopg.connect(f"dbname={db_name}") as conn:
-        response = conn.execute(
-            """
-            SELECT * FROM books
-            WHERE id = %s
-            """,
-            (volume_id,),
-        ).fetchall()
+        if volume_id:
+            response = conn.execute(
+                """
+                SELECT * FROM books
+                WHERE id = %s
+                """,
+                (volume_id,),
+            ).fetchall()
+        if title:
+            response = conn.execute(
+                """
+                SELECT * FROM books
+                WHERE title = %s
+                """,
+                (title,),
+            ).fetchall()
+        if isbn:
+            response = conn.execute(
+                """
+                SELECT * FROM books
+                WHERE isbn_10 = %s OR isbn_13 = %s
+                """,
+                (isbn, isbn),
+            ).fetchall()
     return len(response) > 0
 
 
@@ -135,7 +163,17 @@ def delete_book_from_db(
      - `db_name`: the name of the database with the `books` table.
      - `title`: the title of the book to delete.
      - `isbn`: either the ISBN 10 or ISBN 13 of the book to delete.
+
+    ### Returns:
+    `True` if the book has been deleted, `False` if it could not be found.
     """
+    if title:
+        if not check_if_book_in_db(db_name, title=title):
+            return False
+    if isbn:
+        if not check_if_book_in_db(db_name, isbn=isbn):
+            return False
+
     with psycopg.connect(f"dbname={db_name}") as conn:
         if title:
             conn.execute(
@@ -157,6 +195,7 @@ def delete_book_from_db(
                 """,
                 (isbn, isbn),
             )
+    return True
 
 
 def update_book_in_db(db_name: str, title: str, toggle_read: bool):
@@ -167,7 +206,13 @@ def update_book_in_db(db_name: str, title: str, toggle_read: bool):
      - `db_name`: the name of the database with the `books` table.
      - `title`: the title of the book to update.
      - `toggle_read`: if `True`, will flip a book's read status.
+
+    ### Returns:
+    `True` if the book has been updated, `False` if it could not be found.
     """
+    if not check_if_book_in_db(db_name, title=title):
+        return False
+
     if toggle_read:
         with psycopg.connect(f"dbname={db_name}") as conn:
             conn.execute(
@@ -181,3 +226,4 @@ def update_book_in_db(db_name: str, title: str, toggle_read: bool):
                 """,
                 (title,),
             )
+    return True

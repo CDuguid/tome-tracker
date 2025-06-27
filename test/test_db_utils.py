@@ -127,7 +127,7 @@ class TestCreateBooksTable:
 
 class TestAddBookToDB:
     def test_adds_a_book_to_the_database(self, table_creation):
-        add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
+        response = add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
 
         with psycopg.connect(f"dbname={DBNAME}") as conn:
             table_rows = conn.execute("""
@@ -155,10 +155,11 @@ class TestAddBookToDB:
             )
         ]
         assert table_rows == expected
+        assert response
 
     def test_does_not_duplicate_books_already_in_database(self, table_creation):
         add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
-        add_book_to_db(DBNAME, MEDITATIONS_INFO, False)
+        response = add_book_to_db(DBNAME, MEDITATIONS_INFO, False)
 
         with psycopg.connect(f"dbname={DBNAME}") as conn:
             table_rows = conn.execute("""
@@ -186,6 +187,7 @@ class TestAddBookToDB:
             )
         ]
         assert table_rows == expected
+        assert not response
 
 
 class TestListBooksInDB:
@@ -215,26 +217,42 @@ class TestListBooksInDB:
 
 
 class TestCheckIfBookInDB:
-    def test_returns_true_if_book_is_in_database(self, table_creation):
+    def test_returns_true_if_book_id_is_in_database(self, table_creation):
         add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
-        assert check_if_book_in_db(DBNAME, MEDITATIONS_INFO["id"])
+        assert check_if_book_in_db(DBNAME, volume_id=MEDITATIONS_INFO["id"])
 
-    def test_returns_false_if_book_is_not_in_database(self, table_creation):
-        assert not check_if_book_in_db(DBNAME, MEDITATIONS_INFO["id"])
+    def test_returns_false_if_book_id_is_not_in_database(self, table_creation):
+        assert not check_if_book_in_db(DBNAME, volume_id=MEDITATIONS_INFO["id"])
+
+    def test_returns_true_if_book_title_is_in_database(self, table_creation):
+        add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
+        assert check_if_book_in_db(DBNAME, title=MEDITATIONS_INFO["title"])
+
+    def test_returns_false_if_book_title_is_not_in_database(self, table_creation):
+        assert not check_if_book_in_db(DBNAME, title=MEDITATIONS_INFO["title"])
+
+    def test_returns_true_if_book_isbn_is_in_database(self, table_creation):
+        add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
+        assert check_if_book_in_db(DBNAME, isbn=MEDITATIONS_INFO["isbn_10"])
+
+    def test_returns_false_if_book_isbn_is_not_in_database(self, table_creation):
+        assert not check_if_book_in_db(DBNAME, isbn=MEDITATIONS_INFO["isbn_10"])
 
 
 class TestDeleteBookFromDB:
     def test_deletes_title_from_database_if_present(self, table_creation):
         add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
-        delete_book_from_db(DBNAME, title=MEDITATIONS_INFO["title"])
+        response = delete_book_from_db(DBNAME, title=MEDITATIONS_INFO["title"])
         remaining_books = list_books_in_db(DBNAME)
         assert len(remaining_books) == 0
+        assert response
 
     def test_does_nothing_if_title_not_present(self, table_creation):
         add_book_to_db(DBNAME, CIRCE_INFO, True)
-        delete_book_from_db(DBNAME, title=MEDITATIONS_INFO["title"])
+        response = delete_book_from_db(DBNAME, title=MEDITATIONS_INFO["title"])
         remaining_books = list_books_in_db(DBNAME)
         assert len(remaining_books) == 1
+        assert not response
 
     def test_deletes_isbn_from_database_if_present(self, table_creation):
         add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
@@ -246,33 +264,38 @@ class TestDeleteBookFromDB:
 
     def test_does_nothing_if_isbn_not_present(self, table_creation):
         add_book_to_db(DBNAME, CIRCE_INFO, True)
-        delete_book_from_db(DBNAME, isbn=MEDITATIONS_INFO["isbn_10"])
-        delete_book_from_db(DBNAME, isbn=MEDITATIONS_INFO["isbn_13"])
+        response_1 = delete_book_from_db(DBNAME, isbn=MEDITATIONS_INFO["isbn_10"])
+        response_2 = delete_book_from_db(DBNAME, isbn=MEDITATIONS_INFO["isbn_13"])
         remaining_books = list_books_in_db(DBNAME)
         assert len(remaining_books) == 1
+        assert not response_1
+        assert not response_2
 
 
 class TestUpdateBookInDB:
     def test_changes_an_unread_book_to_read(self, table_creation):
         add_book_to_db(DBNAME, MEDITATIONS_INFO, False)
         add_book_to_db(DBNAME, CIRCE_INFO, False)
-        update_book_in_db(DBNAME, MEDITATIONS_INFO["title"], True)
+        response = update_book_in_db(DBNAME, MEDITATIONS_INFO["title"], True)
         assert len(list_books_in_db(DBNAME, True)) == 1
         assert len(list_books_in_db(DBNAME, False)) == 1
+        assert response
 
     def test_changes_a_read_book_to_unread(self, table_creation):
         add_book_to_db(DBNAME, MEDITATIONS_INFO, True)
-        update_book_in_db(DBNAME, MEDITATIONS_INFO["title"], True)
+        response = update_book_in_db(DBNAME, MEDITATIONS_INFO["title"], True)
         assert len(list_books_in_db(DBNAME, True)) == 0
         assert len(list_books_in_db(DBNAME, False)) == 1
+        assert response
 
     def test_does_nothing_if_attempting_to_update_a_nonpresent_book(
         self, table_creation
     ):
         add_book_to_db(DBNAME, CIRCE_INFO, True)
-        update_book_in_db(DBNAME, MEDITATIONS_INFO["title"], True)
+        response = update_book_in_db(DBNAME, MEDITATIONS_INFO["title"], True)
         assert len(list_books_in_db(DBNAME, True)) == 1
         assert len(list_books_in_db(DBNAME, False)) == 0
+        assert not response
 
     @pytest.mark.skip(
         reason="current implementation toggles read status, rather than setting it to a specific value"
