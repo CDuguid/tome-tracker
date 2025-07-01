@@ -1,7 +1,17 @@
 import cv2
 from pyzbar.pyzbar import decode
+import numpy as np
 
-def get_barcode_data(image) -> str | None:
+def get_barcode_data(image: np.ndarray) -> str | None:
+    """
+    Identifies barcode data in a single image represented by a NumPy array. Will return the first barcode found, so should not be used on an image with multiple barcodes.
+    
+    ### Args:
+    `image`: a single frame from video capture.
+    
+    ### Returns:
+    The barcode string if one has been identified, `None` otherwise.
+    """
     # Convert to greyscale to improve detection
     grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     barcode = decode(grey_image)
@@ -13,7 +23,13 @@ def get_barcode_data(image) -> str | None:
     return None
 
 
-def scan_barcode():
+def scan_barcode() -> str | None:
+    """
+    Opens the device camera in position 0 for video capture. Will capture video until either `q` is pressed or an ISBN13 is identified.
+    
+    ### Returns:
+    The ISBN13 tied to the barcode in the image if found, `None` otherwise.
+    """
     # VideoCapture may take a different value for input device but there is currently no way to list all avaialble input devices
     cap = cv2.VideoCapture(0)
     
