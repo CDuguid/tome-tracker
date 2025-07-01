@@ -42,7 +42,9 @@ class UserInterface:
         print(" - [q]uit")
 
     def add_book(self):
-        addition_type = input("Press 's' to scan a barcode or any other key to manually enter an ISBN:\n> ")
+        addition_type = input(
+            "Press 's' to scan a barcode or any other key to manually enter an ISBN:\n> "
+        )
         if addition_type == "s":
             isbn = scan_barcode()
         else:
@@ -50,7 +52,7 @@ class UserInterface:
         try:
             volume_id = get_volume_id_by_isbn(isbn)
             book_info = get_book_by_volume_id(volume_id)
-            print(f"{book_info["title"]} has been found.")
+            print(f"{book_info['title']} has been found.")
         except NoMatchingISBN:
             print("No book with that ISBN could be found!")
             return
