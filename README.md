@@ -4,7 +4,7 @@ A Python-based personal library management tool that fetches book metadata via I
 
 ## Overview
 
-This project allows users to build and manage a personal book database by entering ISBNs. The application calls the Google Books API for book information and stores it in a PostgreSQL database, with a simple terminal-based interface for interaction.
+This project allows users to build and manage a personal book database by scanning barcodes for ISBNs or by manually entering them. The application calls the Google Books API for book information and stores it in a PostgreSQL database, with a simple terminal-based interface for interaction.
 
 **N.B.** this project is currently under development. The core functionality is operational, with plans for enhanced search capabilities and a web-based frontend under consideration.
 
@@ -12,6 +12,7 @@ This project allows users to build and manage a personal book database by enteri
 
 - ISBN-based book lookup using Google Books API
 - PostgreSQL database storage for book metadata
+- Barcode scanning integration (with OpenCV for image recognition)
 - Terminal interface for CRUD operations
 - Read/unread book status tracking
 
@@ -20,4 +21,4 @@ This project allows users to build and manage a personal book database by enteri
 
  - Advanced search and filtering options
  - Web interface (with FastAPI and Jinja2)
- - Barcode scanning integration (with OpenCV)
+ - More advanced image recognition to identify books by their front covers
