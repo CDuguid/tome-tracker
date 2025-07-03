@@ -1,6 +1,7 @@
+import re
+
 import requests
 from requests.exceptions import HTTPError
-import re
 
 
 class NoMatchingISBN(Exception):

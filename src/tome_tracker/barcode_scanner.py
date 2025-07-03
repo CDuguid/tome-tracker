@@ -1,6 +1,6 @@
 import cv2
-from pyzbar.pyzbar import decode
 import numpy as np
+from pyzbar.pyzbar import decode
 
 
 def get_barcode_data(image: np.ndarray) -> str | None:

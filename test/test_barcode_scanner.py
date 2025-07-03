@@ -1,7 +1,9 @@
-from src.tome_tracker.barcode_scanner import get_barcode_data, scan_barcode
-import pytest
-import cv2
 from unittest.mock import patch
+
+import cv2
+import pytest
+
+from src.tome_tracker.barcode_scanner import get_barcode_data, scan_barcode
 
 
 @pytest.fixture

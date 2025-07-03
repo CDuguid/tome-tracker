@@ -1,15 +1,16 @@
-from src.tome_tracker.db_utils import (
-    create_books_table,
-    add_book_to_db,
-    list_books_in_db,
-    check_if_book_in_db,
-    delete_book_from_db,
-    update_book_in_db,
-)
-import psycopg
-import pytest
 import datetime
 
+import psycopg
+import pytest
+
+from src.tome_tracker.db_utils import (
+    add_book_to_db,
+    check_if_book_in_db,
+    create_books_table,
+    delete_book_from_db,
+    list_books_in_db,
+    update_book_in_db,
+)
 
 DBNAME = "test_tome_tracker"
 
